@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gnoke Spirit — Process Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #111010; --ink-2: #555350; --ink-3: #999693;
+    --rule: #e8e5e1; --surface: #faf9f7; --paper: #fff;
+    --green: #1d7a4a; --green-bg: #edf7f1; --green-border: #a7d7bc;
+    --red: #b91c1c; --red-bg: #fef2f2; --red-border: #fca5a5;
+    --blue: #1d4ed8; --blue-bg: #eff6ff; --blue-border: #bfdbfe;
+    --sans: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  html { -webkit-font-smoothing: antialiased; }
+  body { font-family: var(--sans); background: var(--surface); color: var(--ink); min-height: 100vh; padding: 2rem 1.5rem; }
+
+  h1 { font-size: 1rem; font-weight: 600; margin-bottom: .25rem; }
+  .sub { font-size: .82rem; color: var(--ink-3); font-family: var(--mono); margin-bottom: 2rem; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 680px; margin-bottom: 1.5rem; }
+
+  .proc-card {
+    background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 10px; padding: 1.25rem;
+  }
+  .proc-card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .proc-title { font-family: var(--mono); font-size: .75rem; font-weight: 500; color: var(--ink-2); }
+  .proc-status {
+    font-family: var(--mono); font-size: .65rem; padding: .2rem .5rem;
+    border-radius: 999px; font-weight: 500;
+  }
+  .proc-status.alive { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .proc-status.dead  { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+
+  label { display: block; font-size: .7rem; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .3rem; }
+  input, textarea {
+    width: 100%; font-family: var(--sans); font-size: .85rem; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 7px;
+    padding: .55rem .75rem; outline: none; margin-bottom: .85rem;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--ink); background: var(--paper);
+    box-shadow: 0 0 0 3px rgba(17,16,16,.06);
+  }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.55; }
+  input:last-child, textarea:last-child { margin-bottom: 0; }
+
+  .btn-row { display: flex; gap: .5rem; margin-top: 1rem; }
+  button {
+    font-family: var(--sans); font-size: .78rem; font-weight: 600;
+    border-radius: 7px; padding: .5rem .9rem; cursor: pointer; border: none; transition: all .15s;
+  }
+  .btn-kill { background: var(--ink); color: #fff; }
+  .btn-kill:hover { background: #2a2a2a; }
+  .btn-wipe { background: transparent; color: var(--red); border: 1px solid var(--red-border); font-size: .75rem; }
+  .btn-wipe:hover { background: var(--red-bg); }
+
+  /* Log */
+  .log-label { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); margin-bottom: .6rem; max-width: 680px; }
+  .log {
+    max-width: 680px; background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 10px; padding: 1rem 1.2rem; font-family: var(--mono);
+    font-size: .78rem; min-height: 90px; line-height: 1.7;
+  }
+  .log-row { color: var(--ink-2); }
+  .log-row .ts { color: var(--ink-3); font-size: .7rem; margin-right: .5rem; }
+  .log-row.ok  .msg { color: var(--green); }
+  .log-row.info .msg { color: var(--blue); }
+  .log-row.warn .msg { color: var(--red); }
+</style>
+</head>
+<body>
+
+<h1>Gnoke Spirit — Process Isolation Test</h1>
+<p class="sub">Two isolated processes. One page. Kill either — it comes back.</p>
+
+<div class="grid">
+  <div class="proc-card">
+    <div class="proc-card-head">
+      <span class="proc-title">/app/editor</span>
+      <span id="status-a" class="proc-status alive">alive</span>
+    </div>
+    <form id="form-a">
+      <label>Document title</label>
+      <input type="text" name="title" placeholder="Untitled">
+      <label>Body</label>
+      <textarea name="body" placeholder="Start writing…"></textarea>
+    </form>
+    <div class="btn-row">
+      <button class="btn-kill" onclick="sessionStorage.setItem('r','a'); location.reload()">Kill A</button>
+      <button class="btn-wipe" id="wipe-a">Wipe A</button>
+    </div>
+  </div>
+
+  <div class="proc-card">
+    <div class="proc-card-head">
+      <span class="proc-title">/app/settings</span>
+      <span id="status-b" class="proc-status alive">alive</span>
+    </div>
+    <form id="form-b">
+      <label>Theme</label>
+      <input type="text" name="theme" placeholder="light">
+      <label>Language</label>
+      <input type="text" name="lang" placeholder="en">
+      <label>Bio</label>
+      <input type="text" name="bio" placeholder="what you're about">
+    </form>
+    <div class="btn-row">
+      <button class="btn-kill" onclick="sessionStorage.setItem('r','b'); location.reload()">Kill B</button>
+      <button class="btn-wipe" id="wipe-b">Wipe B</button>
+    </div>
+  </div>
+</div>
+
+<p class="log-label">Process Log</p>
+<div class="log" id="log"></div>
+
+<script src="./gnoke-spirit.js"></script>
+<script>
+  const log = document.getElementById('log');
+
+  const print = (msg, type = 'info') => {
+    const ts = new Date().toLocaleTimeString();
+    log.innerHTML += `<div class="log-row ${type}"><span class="ts">${ts}</span><span class="msg">${msg}</span></div>`;
+    log.scrollTop = log.scrollHeight;
+  };
+
+  (async () => {
+    const formA = document.getElementById('form-a');
+    const formB = document.getElementById('form-b');
+
+    await gnokeSpirit.wake('/app/editor', formA);
+    await gnokeSpirit.wake('/app/settings', formB);
+
+    const keys = await gnokeSpirit.list();
+    print(`Processes active: [${keys.join(', ')}]`, 'info');
+
+    const resumed = sessionStorage.getItem('r');
+    if (resumed) {
+      sessionStorage.removeItem('r');
+      const pid = resumed === 'a' ? '/app/editor' : '/app/settings';
+      print(`Process ${pid} resurrected ✓`, 'ok');
+    }
+
+    document.getElementById('wipe-a').addEventListener('click', async () => {
+      await gnokeSpirit.kill('/app/editor');
+      document.getElementById('status-a').className = 'proc-status dead';
+      document.getElementById('status-a').textContent = 'wiped';
+      print('Process /app/editor wiped', 'warn');
+    });
+
+    document.getElementById('wipe-b').addEventListener('click', async () => {
+      await gnokeSpirit.kill('/app/settings');
+      document.getElementById('status-b').className = 'proc-status dead';
+      document.getElementById('status-b').textContent = 'wiped';
+      print('Process /app/settings wiped', 'warn');
+    });
+  })();
+</script>
+</body>
+</html>

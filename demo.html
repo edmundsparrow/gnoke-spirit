@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gnoke Spirit — Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #111010; --ink-2: #555350; --ink-3: #999693;
+    --rule: #e8e5e1; --surface: #faf9f7; --paper: #fff;
+    --green: #1d7a4a; --green-bg: #edf7f1; --green-border: #a7d7bc;
+    --red: #b91c1c; --red-bg: #fef2f2; --red-border: #fca5a5;
+    --amber: #92400e; --amber-bg: #fffbeb; --amber-border: #fde68a;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'DM Serif Display', serif;
+    --mono: 'DM Mono', monospace;
+  }
+  html { -webkit-font-smoothing: antialiased; }
+  body { font-family: var(--sans); background: var(--surface); color: var(--ink); min-height: 100vh; }
+
+  /* Header */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2rem; background: var(--paper);
+    border-bottom: 1px solid var(--rule); position: sticky; top: 0; z-index: 10;
+  }
+  .logo { display: flex; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .9rem; }
+  .logo-mark { font-size: 1rem; }
+  .logo em { font-style: normal; color: var(--ink-3); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-family: var(--mono); font-size: .7rem; font-weight: 500;
+    padding: .28rem .7rem; border-radius: 999px; transition: all .3s;
+  }
+  .badge.dormant  { background: #f3f2f0; color: var(--ink-3); border: 1px solid var(--rule); }
+  .badge.alive    { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .badge.dead     { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .alive .badge-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  /* Layout */
+  main { max-width: 600px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+
+  .hero { margin-bottom: 2.5rem; }
+  .hero h1 { font-family: var(--serif); font-size: clamp(2.2rem, 6vw, 3rem); line-height: 1.15; letter-spacing: -.02em; margin-bottom: .6rem; }
+  .hero h1 em { font-style: italic; color: var(--ink-2); }
+  .hero p { font-size: .92rem; color: var(--ink-2); line-height: 1.65; max-width: 460px; }
+
+  /* Card */
+  .card {
+    background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 1.75rem; margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.03);
+  }
+  .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .card-tag { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); }
+  .pid { font-family: var(--mono); font-size: .68rem; color: var(--ink-3); }
+
+  /* Form */
+  .field { margin-bottom: 1.2rem; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  label {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .72rem; font-weight: 600; color: var(--ink-2);
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: .38rem;
+  }
+  label.warn { color: var(--amber); }
+  .pill {
+    font-family: var(--mono); font-size: .62rem; font-weight: 400;
+    text-transform: none; letter-spacing: 0;
+    background: var(--amber-bg); color: var(--amber);
+    border: 1px solid var(--amber-border); padding: .1rem .4rem; border-radius: 4px;
+  }
+  input, textarea {
+    width: 100%; font-family: var(--sans); font-size: .9rem; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 8px;
+    padding: .62rem .85rem; outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  input::placeholder, textarea::placeholder { color: var(--ink-3); }
+  input:focus, textarea:focus {
+    border-color: var(--ink); background: var(--paper);
+    box-shadow: 0 0 0 3px rgba(17,16,16,.06);
+  }
+  textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+  .warn-input { border-color: var(--amber-border) !important; background: var(--amber-bg) !important; }
+  .warn-input:focus { border-color: var(--amber) !important; box-shadow: 0 0 0 3px rgba(146,64,14,.08) !important; }
+
+  /* Actions */
+  .actions {
+    display: flex; gap: .75rem; margin-top: 1.5rem;
+    padding-top: 1.25rem; border-top: 1px solid var(--rule);
+  }
+  button {
+    font-family: var(--sans); font-size: .85rem; font-weight: 600;
+    border-radius: 8px; padding: .6rem 1.25rem; cursor: pointer; border: none; transition: all .15s;
+  }
+  .btn-primary { background: var(--ink); color: #fff; flex: 1; }
+  .btn-primary:hover { background: #2a2a2a; }
+  .btn-ghost { background: transparent; color: var(--red); border: 1px solid var(--red-border); }
+  .btn-ghost:hover { background: var(--red-bg); }
+
+  /* Process table */
+  .section-label { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); margin-bottom: .8rem; }
+  .proc-table { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .proc-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .7rem 1.2rem; border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: .78rem; animation: fadeIn .25s ease;
+  }
+  .proc-row:last-child { border-bottom: none; }
+  .proc-ts { color: var(--ink-3); font-size: .7rem; }
+  .empty { display: block; padding: .9rem 1.2rem; font-family: var(--mono); font-size: .78rem; color: var(--ink-3); }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:none} }
+
+  footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--rule);
+    font-size: .75rem; color: var(--ink-3);
+  }
+  footer a { color: var(--ink-2); text-decoration: none; font-weight: 500; }
+  footer a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-mark">◈</span>
+    gnoke<em>spirit</em>
+  </div>
+  <div id="badge" class="badge dormant">
+    <span class="badge-dot"></span>
+    <span id="badge-label">Initialising</span>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>The browser<br><em>remembers.</em></h1>
+    <p>Kill the tab. Reopen it. Pick up exactly where you left.<br>Tabs as processes. IndexedDB as memory.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <span class="card-tag">Live Demo</span>
+      <span id="pid" class="pid"></span>
+    </div>
+
+    <form id="spirit-form">
+      <div class="field">
+        <label for="draft">Working Draft</label>
+        <textarea id="draft" name="draft" placeholder="Write something. Kill this tab. Come back."></textarea>
+      </div>
+      <div class="field row">
+        <div>
+          <label for="handle">Handle</label>
+          <input id="handle" type="text" name="handle" placeholder="yourname">
+        </div>
+        <div>
+          <label for="status">Status</label>
+          <input id="status" type="text" name="status" placeholder="what are you building?">
+        </div>
+      </div>
+      <div class="field">
+        <label for="password" class="warn">
+          Password
+          <span class="pill">never persisted</span>
+        </label>
+        <input id="password" type="password" name="password" class="warn-input" placeholder="safe to type — won't survive a reload">
+      </div>
+    </form>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="location.reload()">Kill &amp; Resurrect</button>
+      <button class="btn-ghost" id="btn-wipe">Wipe Memory</button>
+    </div>
+  </div>
+
+  <p class="section-label">Active Processes</p>
+  <div class="proc-table" id="proc-table">
+    <span class="empty">No processes yet.</span>
+  </div>
+
+  <footer>
+    <span>Gnoke Spirit — Edmund Sparrow © 2026</span>
+    <a href="https://dev.to/edmundsparrow/i-accidentally-wrote-a-filesystem-driver-for-a-browser-53cd" target="_blank">Read the origin →</a>
+  </footer>
+</main>
+
+<script src="./gnoke-spirit.js"></script>
+<script>
+  const badge = document.getElementById('badge');
+  const badgeLabel = document.getElementById('badge-label');
+  const pidEl = document.getElementById('pid');
+  const procTable = document.getElementById('proc-table');
+
+  const setBadge = (state, label) => {
+    badge.className = 'badge ' + state;
+    badgeLabel.textContent = label;
+  };
+
+  const renderProcs = async () => {
+    const keys = await gnokeSpirit.list();
+    procTable.innerHTML = keys.length
+      ? keys.map(k => `<div class="proc-row"><span>${k}</span><span class="proc-ts">alive</span></div>`).join('')
+      : '<span class="empty">No processes yet.</span>';
+  };
+
+  gnokeSpirit.wake().then(async pid => {
+    setBadge('alive', 'Process alive');
+    pidEl.textContent = 'pid: ' + pid;
+    await renderProcs();
+  }).catch(() => setBadge('dead', 'Spirit error'));
+
+  document.getElementById('btn-wipe').addEventListener('click', async () => {
+    await gnokeSpirit.kill();
+    setBadge('dead', 'Memory wiped');
+    await renderProcs();
+    setTimeout(() => location.reload(), 500);
+  });
+</script>
+</body>
+</html>

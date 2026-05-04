@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gnoke Spirit — Tabs as Processes</title>
+<meta name="description" content="Tabs as processes. IndexedDB as memory. Nothing is lost. A zero-dependency browser persistence layer by Edmund Sparrow.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #111010; --ink-2: #555350; --ink-3: #999693;
+    --rule: #e8e5e1; --surface: #faf9f7; --paper: #fff;
+    --green: #1d7a4a; --green-bg: #edf7f1; --green-border: #a7d7bc;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'DM Serif Display', serif;
+    --mono: 'DM Mono', monospace;
+  }
+  html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--surface); color: var(--ink); }
+
+  /* ── Nav ── */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2rem; background: var(--paper);
+    border-bottom: 1px solid var(--rule); position: sticky; top: 0; z-index: 10;
+  }
+  .logo { display: flex; align-items: center; gap: .5rem; font-family: var(--mono); font-size: .9rem; text-decoration: none; color: var(--ink); }
+  .logo-mark { font-size: 1rem; }
+  .logo em { font-style: normal; color: var(--ink-3); }
+  .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+  .nav-links a { font-size: .83rem; font-weight: 500; color: var(--ink-2); text-decoration: none; transition: color .15s; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links .btn-nav {
+    background: var(--ink); color: #fff; padding: .4rem 1rem;
+    border-radius: 7px; font-size: .82rem; font-weight: 600;
+  }
+  .nav-links .btn-nav:hover { background: #2a2a2a; color: #fff; }
+
+  /* ── Hero ── */
+  .hero {
+    max-width: 700px; margin: 0 auto;
+    padding: 5rem 1.5rem 3.5rem; text-align: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: .45rem;
+    font-family: var(--mono); font-size: .72rem; font-weight: 500;
+    color: var(--green); background: var(--green-bg);
+    border: 1px solid var(--green-border);
+    padding: .28rem .75rem; border-radius: 999px; margin-bottom: 1.75rem;
+  }
+  .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  h1 {
+    font-family: var(--serif); font-size: clamp(2.8rem, 7vw, 4.2rem);
+    line-height: 1.1; letter-spacing: -.025em; margin-bottom: 1.25rem;
+  }
+  h1 em { font-style: italic; color: var(--ink-2); }
+
+  .hero-sub {
+    font-size: 1.05rem; color: var(--ink-2); line-height: 1.7;
+    max-width: 480px; margin: 0 auto 2.25rem;
+  }
+
+  .hero-actions { display: flex; align-items: center; justify-content: center; gap: .75rem; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--ink); color: #fff; font-family: var(--sans);
+    font-size: .9rem; font-weight: 600; padding: .7rem 1.5rem;
+    border-radius: 9px; text-decoration: none; transition: background .15s;
+  }
+  .btn-primary:hover { background: #2a2a2a; }
+  .btn-secondary {
+    background: var(--paper); color: var(--ink-2); font-family: var(--sans);
+    font-size: .9rem; font-weight: 500; padding: .7rem 1.5rem;
+    border-radius: 9px; text-decoration: none; border: 1px solid var(--rule);
+    transition: all .15s;
+  }
+  .btn-secondary:hover { border-color: #ccc; color: var(--ink); }
+
+  /* ── Code strip ── */
+  .code-strip {
+    background: var(--paper); border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule); padding: 2rem 1.5rem;
+    text-align: center;
+  }
+  .code-label { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); margin-bottom: 1rem; }
+  .code-block {
+    display: inline-block; text-align: left;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 10px; padding: 1.25rem 1.5rem;
+    font-family: var(--mono); font-size: .85rem; line-height: 1.8;
+    color: var(--ink); max-width: 100%; overflow-x: auto;
+  }
+  .c-tag { color: #6366f1; }
+  .c-str { color: #059669; }
+  .c-fn  { color: #0369a1; }
+  .c-cmt { color: var(--ink-3); }
+
+  /* ── How it works ── */
+  .section { max-width: 700px; margin: 0 auto; padding: 4rem 1.5rem; }
+  .section-label { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); margin-bottom: 2rem; }
+
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  .step { background: var(--paper); padding: 1.5rem; }
+  .step-num { font-family: var(--mono); font-size: .7rem; color: var(--ink-3); margin-bottom: .75rem; }
+  .step-title { font-size: .95rem; font-weight: 600; margin-bottom: .4rem; }
+  .step-desc { font-size: .83rem; color: var(--ink-2); line-height: 1.6; }
+
+  /* ── API ── */
+  .api-list { display: flex; flex-direction: column; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  .api-row { display: flex; align-items: flex-start; gap: 1.5rem; background: var(--paper); padding: 1.25rem 1.5rem; }
+  .api-sig { font-family: var(--mono); font-size: .82rem; color: var(--ink); white-space: nowrap; min-width: 220px; }
+  .api-desc { font-size: .85rem; color: var(--ink-2); line-height: 1.6; padding-top: .05rem; }
+
+  /* ── Safety table ── */
+  table { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  th { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 500; padding: .85rem 1.25rem; border-bottom: 1px solid var(--rule); text-align: left; }
+  td { font-size: .85rem; padding: .8rem 1.25rem; border-bottom: 1px solid var(--rule); color: var(--ink-2); }
+  tr:last-child td { border-bottom: none; }
+  .yes { color: var(--green); font-weight: 600; }
+  .no  { color: #b91c1c; font-weight: 600; }
+
+  /* ── Links strip ── */
+  .links-strip {
+    background: var(--paper); border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    display: flex; justify-content: center; gap: 0;
+  }
+  .link-card {
+    flex: 1; max-width: 240px; padding: 2rem 1.5rem;
+    text-decoration: none; color: var(--ink);
+    border-right: 1px solid var(--rule); transition: background .15s;
+    text-align: center;
+  }
+  .link-card:last-child { border-right: none; }
+  .link-card:hover { background: var(--surface); }
+  .link-icon { font-size: 1.4rem; margin-bottom: .6rem; }
+  .link-title { font-size: .9rem; font-weight: 600; margin-bottom: .25rem; }
+  .link-desc { font-size: .78rem; color: var(--ink-3); }
+
+  /* ── Footer ── */
+  footer {
+    max-width: 700px; margin: 0 auto;
+    padding: 2rem 1.5rem; display: flex;
+    align-items: center; justify-content: space-between;
+    font-size: .78rem; color: var(--ink-3);
+  }
+  footer a { color: var(--ink-2); text-decoration: none; font-weight: 500; }
+  footer a:hover { color: var(--ink); }
+
+  @media (max-width: 540px) {
+    .api-row { flex-direction: column; gap: .4rem; }
+    .api-sig { min-width: unset; }
+    .nav-links .btn-nav { display: none; }
+    .links-strip { flex-direction: column; }
+    .link-card { max-width: unset; border-right: none; border-bottom: 1px solid var(--rule); }
+    .link-card:last-child { border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">
+    <span class="logo-mark">◈</span>
+    gnoke<em>spirit</em>
+  </a>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#api">API</a>
+    <a href="https://github.com/edmundsparrow/gnoke-spirit" target="_blank">GitHub</a>
+    <a href="demo.html" class="btn-nav">Live Demo →</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">
+    <span class="hero-eyebrow-dot"></span>
+    Zero dependencies · Vanilla JS · 2kb
+  </div>
+  <h1>The browser<br><em>never forgets.</em></h1>
+  <p class="hero-sub">
+    Kill a tab. Reopen it. Pick up exactly where you left.
+    Tabs as processes. IndexedDB as memory. Nothing is lost.
+  </p>
+  <div class="hero-actions">
+    <a href="demo.html" class="btn-primary">See it live →</a>
+    <a href="test.html" class="btn-secondary">Process isolation test</a>
+  </div>
+</section>
+
+<div class="code-strip">
+  <p class="code-label">Drop in. Two lines.</p>
+  <div class="code-block">
+    <span class="c-tag">&lt;script</span> src=<span class="c-str">"https://cdn.jsdelivr.net/gh/edmundsparrow/gnoke-spirit/gnoke-spirit.js"</span><span class="c-tag">&gt;&lt;/script&gt;</span><br>
+    <span class="c-tag">&lt;script&gt;</span> <span class="c-fn">gnokeSpirit</span>.<span class="c-fn">wake</span>(); <span class="c-tag">&lt;/script&gt;</span><br>
+    <span class="c-cmt">// That's it. Your tab now survives death.</span>
+  </div>
+</div>
+
+<section class="section" id="how">
+  <p class="section-label">How it works</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">User types</div>
+      <div class="step-desc">Spirit watches input events, throttled at 300ms. State written silently to IndexedDB.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Tab is killed</div>
+      <div class="step-desc">OS clears memory. A final snapshot fires on <code>visibilitychange</code> before the process dies.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Tab reopens</div>
+      <div class="step-desc">Spirit reads IndexedDB before first paint. Scroll, fields, and focus restored instantly.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-title">User continues</div>
+      <div class="step-desc">No flicker. No prompt. No lost work. Indistinguishable from a native app.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0" id="api">
+  <p class="section-label">API</p>
+  <div class="api-list">
+    <div class="api-row">
+      <span class="api-sig">gnokeSpirit.wake(pid?, form?)</span>
+      <span class="api-desc">Start the spirit. Restores last state immediately. <code>pid</code> defaults to <code>location.pathname</code> — each route is its own process.</span>
+    </div>
+    <div class="api-row">
+      <span class="api-sig">gnokeSpirit.kill(pid?)</span>
+      <span class="api-desc">Wipe process memory. Pass a custom pid or leave blank to wipe the current tab's process.</span>
+    </div>
+    <div class="api-row">
+      <span class="api-sig">gnokeSpirit.list()</span>
+      <span class="api-desc">Returns all active process IDs. Your process table. Useful for building tab managers or dashboards.</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <p class="section-label">What is and isn't persisted</p>
+  <table>
+    <thead>
+      <tr><th>State</th><th>Persisted</th><th>Reason</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Text inputs &amp; textareas</td><td class="yes">Yes</td><td>Safe user content</td></tr>
+      <tr><td>Scroll position</td><td class="yes">Yes</td><td>Safe positional state</td></tr>
+      <tr><td>Active field focus</td><td class="yes">Yes</td><td>Safe UX context</td></tr>
+      <tr><td>Select values</td><td class="yes">Yes</td><td>Safe user preference</td></tr>
+      <tr><td>Passwords</td><td class="no">Never</td><td>Security — always excluded</td></tr>
+      <tr><td>Tokens &amp; secrets</td><td class="no">Never</td><td>Security — always excluded</td></tr>
+      <tr><td>Auth / session state</td><td class="no">Never</td><td>Not our concern — by design</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<div class="links-strip">
+  <a href="demo.html" class="link-card">
+    <div class="link-icon">⚡</div>
+    <div class="link-title">Live Demo</div>
+    <div class="link-desc">Kill a tab and watch it come back</div>
+  </a>
+  <a href="test.html" class="link-card">
+    <div class="link-icon">🔬</div>
+    <div class="link-title">Process Test</div>
+    <div class="link-desc">Two isolated processes, one page</div>
+  </a>
+  <a href="https://github.com/edmundsparrow/gnoke-spirit" target="_blank" class="link-card">
+    <div class="link-icon">◈</div>
+    <div class="link-title">Source</div>
+    <div class="link-desc">GitHub — MIT licensed</div>
+  </a>
+  <a href="https://dev.to/edmundsparrow/i-accidentally-wrote-a-filesystem-driver-for-a-browser-53cd" target="_blank" class="link-card">
+    <div class="link-icon">✍︎</div>
+    <div class="link-title">Origin Story</div>
+    <div class="link-desc">How SaveNative became Spirit</div>
+  </a>
+</div>
+
+<footer>
+  <span>Gnoke Spirit — Edmund Sparrow © 2026</span>
+  <a href="https://github.com/edmundsparrow/gnoke-spirit" target="_blank">View on GitHub →</a>
+</footer>
+
+</body>
+</html>
