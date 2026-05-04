@@ -4,6 +4,9 @@
   const VERSION = 1;
   const SENSITIVE = new Set(['password', 'token', 'cc', 'cvv', 'ssn', 'secret']);
 
+  // ── In-memory mirror — instant reads mid-session, IDB is the checkpoint ──
+  let _mem = {};
+
   // ── Cached connection — one DB open for the lifetime of the page ──
   let _db = null;
   const getDB = () => {
@@ -57,6 +60,11 @@
     };
   };
 
+  const save = async (pid, formEl) => {
+    _mem[pid] = capture(formEl);
+    await dbPut(await getDB(), _mem[pid], pid);
+  };
+
   const restore = async (db, pid, root) => {
     const raw   = await dbGet(db, pid);
     const state = migrate(raw);
@@ -87,12 +95,12 @@
       const target = formEl || window;
       target.addEventListener('input', () => {
         clearTimeout(t);
-        t = setTimeout(async () => await dbPut(await getDB(), capture(formEl), pid), 300);
+        t = setTimeout(() => save(pid, formEl), 300);
       });
 
       window.addEventListener('visibilitychange', async () => {
         if (document.visibilityState === 'hidden')
-          await dbPut(await getDB(), capture(formEl), pid);
+          await save(pid, formEl);
       });
 
       return pid;
