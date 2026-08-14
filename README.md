@@ -1,93 +1,94 @@
 # Gnoke-Spirit
 
-**Tabs as processes. IndexedDB as memory. Nothing is lost.**
-
-Part of the [Gnoke Suite](https://github.com/edmundsparrow) by Edmund Sparrow.
-
-🔗 **[Live Demo → edmundsparrow.github.io/gnoke-spirit](https://edmundsparrow.github.io/gnoke-spirit)**
+A single continuation point with a lifecycle. Zero dependencies. Vanilla JS. Part of the [Gnoke Suite](https://edmundsparrow.netlify.app).
 
 ---
 
-## What it does
+## What it is
 
-`gnoke-spirit` turns browser tabs into persistent processes. When a tab is killed — by the OS, a crash, or a forced reload — the spirit restores it exactly as it was. No flicker. No lost input. No permission prompts.
+`Spirit(key)` gives you one opaque slot in IndexedDB with three moves:
 
-Built on raw IndexedDB. No dependencies. No build step. Works everywhere.
+- **`snapshot(state)`** — save the current state. Each call overwrites the previous one for that key — there is no history, only the latest.
+- **`wake()`** — read it back. Returns `null` if nothing's been saved yet.
+- **`purge()`** — forget this one key.
+- **`wipe()`** — clear the entire store, for a full reset.
+
+`state` can be any structured-clone-compatible value — plain objects, `Blob`, `ArrayBuffer`, `Date`, `Map`, `Set`, and (notably) a `FileSystemDirectoryHandle`/`FileSystemFileHandle`. Not functions or live DOM references.
+
+That's the whole primitive. It doesn't know or care what's inside the state you hand it — a form's field values, a File System Access handle, a game's save slot, a wizard's step number. It's a sticky note, not a diary: one slot per key, always the latest thing written there.
 
 ---
 
-## Usage
+## Install
 
-Drop one script tag. Call one function.
+No npm package — copy `gnoke-spirit.js` into your project, or use directly via a CDN:
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/edmundsparrow/gnoke-spirit/gnoke-spirit.js"></script>
-<script>
-  gnokeSpirit.wake();
-</script>
 ```
 
-That's it. Every form input, scroll position, and focused field survives tab death automatically.
+Works as a plain `<script>` tag (attaches `window.Spirit`) or `require()` under CommonJS. No build step.
 
 ---
+
+## Quick Start
+
+```js
+const draft = Spirit('draft-note');
+
+await draft.snapshot({ text: 'half-written thought' });
+// ...reload, close the tab, come back tomorrow...
+const state = await draft.wake();
+// { text: 'half-written thought' }
+
+await draft.purge(); // done with this one
+```
 
 ## API
 
-```js
-await gnokeSpirit.wake(pid?, formEl?)
-```
-Start the spirit. Restores last known state immediately.
-- `pid` — process ID. Defaults to `location.pathname`.
-- `formEl` — target a specific form instead of scanning the whole document.
+### `Spirit(key, dbName = 'gnoke:spirit', store = 'tomb')`
+Creates a continuation point. `key` identifies this specific slot; `dbName`/`store` let you namespace separate concerns into separate databases (see **Two Spirit instances, two databases** below).
 
-```js
-await gnokeSpirit.kill(pid?)
-```
-Wipe process memory.
+### `spirit.snapshot(state)`
+Overwrites the saved state for this key.
 
-```js
-await gnokeSpirit.list()
-```
-Returns all active process IDs. Your process table.
+### `spirit.wake()`
+Returns the last saved state, or `null`.
+
+### `spirit.purge()`
+Deletes this key's entry.
+
+### `spirit.wipe()`
+Clears every key in this Spirit's store — the reset button, not the everyday tool.
 
 ---
 
-## Multi-tab example
+## Two Spirit instances, two databases
+
+If you're using Spirit for more than one unrelated concern in the same app — say, a workspace handle *and* form-draft state — give them **different `dbName`s**, not just different keys in the same one:
 
 ```js
-await gnokeSpirit.wake('/editor');   // Tab 1
-await gnokeSpirit.wake('/settings'); // Tab 2
-// Each isolated. Kill either — it comes back.
+const handleSpirit = Spirit('workspace-handle', 'gnoke:spirit', 'tomb');
+const formSpirit    = Spirit('draft-note',       'gnoke:spirit:forms', 'processes');
 ```
 
----
-
-## What is and isn't persisted
-
-| Persisted | Not persisted |
-|---|---|
-| Text inputs | Passwords |
-| Textareas | Tokens / secrets |
-| Select values | Auth state |
-| Scroll position | Cookies |
-| Active field focus | Anything sensitive |
+Two `Spirit()` calls opening the *same* database name with *different* object stores will race on IndexedDB's upgrade step — only one store gets created, since a same-version open only fires `onupgradeneeded` once. Separate databases sidestep this entirely. `gnoke-savenative` and `gnoke-persist` both follow this rule internally.
 
 ---
 
-## The idea
+## Assumptions
 
-> Persistence is not a feature. It's a background guarantee.
-
-`gnoke-spirit` is the missing OS layer for the browser. Each tab is an independent process with its own memory. The browser is an OS.
+Spirit assumes **one instance kept alive per app/key lifetime** — the IndexedDB connection opens once and is never explicitly closed. Calling `Spirit(...)` fresh per transient use (e.g. once per form submit, rather than once per app load) will accumulate open connections rather than release them.
 
 ---
 
-## Prior work
+## Where this is actually used
 
-Built on [gnoke-savenative](https://dev.to/edmundsparrow/i-accidentally-wrote-a-filesystem-driver-for-a-browser-53cd). Spirit replaces the filesystem dependency with pure IndexedDB — universal, zero-permission, zero dependencies.
+- **[gnoke-savenative](https://github.com/edmundsparrow/gnoke-savenative)** — stores the File System Access workspace handle via Spirit, so a user picks a folder once and it survives reload without re-prompting.
+- **[gnoke-persist](https://github.com/edmundsparrow/gnoke-persist)** — form-state autosave (capturing field values, scroll position, focus, and restoring them) is built as a thin wrapper *around* Spirit, not a separate implementation. If you're looking for form autosave specifically, that's the repo — this one is just the primitive underneath it.
 
 ---
 
 ## License
 
-MIT — Edmund Sparrow © 2026
+MIT © Edmund Sparrow — [Gnoke Suite](https://edmundsparrow.netlify.app)
